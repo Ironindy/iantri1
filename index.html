@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="철인3종 속도, 페이스, 거리 계산 도구 및 경기 기록 관리 웹사이트" />
+<meta name="color-scheme" content="light only" />
+<meta name="supported-color-schemes" content="light" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="theme-color" content="#3093F8" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon.png" />
+<link rel="apple-touch-icon" href="icon.png" />
+<title>Ian 철인계산기</title>
+<meta property="og:title" content="Ian 철인계산기" />
+<meta property="og:description" content="속도·페이스·거리 자동 계산, 레이스 타이머 — 철인3종 경기에 필요한 계산 도구" />
+<meta property="og:image" content="https://triathlon-calc.vercel.app/triathlon-logo.png" />
+<meta property="og:type" content="website" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell','Fira Sans','Droid Sans','Helvetica Neue',sans-serif; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; background:#f9fafb; color:#111827; }
+  @keyframes fadeScaleIn { from{opacity:0; transform:scale(.95);} to{opacity:1; transform:scale(1);} }
+</style>
+</head>
+<body>
+
+<div class="min-h-screen bg-gray-50" style="background-color:#f9fafb;color:#111827;">
+  <div class="max-w-md mx-auto space-y-4 pt-6">
+
+    <!-- Title -->
+    <div class="flex items-center justify-center gap-2">
+      <img src="triathlon-logo.png" alt="Triathlon" class="w-12 h-12 object-contain rounded-full cursor-pointer" onclick="showLogoPopup()">
+      <h1 class="text-2xl font-bold text-gray-900"><span class="font-normal italic text-gray-500">Ian</span> 철인계산기</h1>
+    </div>
+
+    <!-- Tabs Box -->
+    <div class="bg-white shadow-lg rounded-lg p-1">
+      <div class="flex gap-1">
+        <button id="tab-btn-calculator" onclick="switchTab('calculator')" class="flex-1 py-3 px-3 rounded-md text-sm font-bold transition-all flex items-center justify-center gap-2 bg-blue-600 text-white">
+          <i data-lucide="gauge" class="w-4 h-4"></i>속도/페이스
+        </button>
+        <button id="tab-btn-race" onclick="switchTab('race')" class="flex-1 py-3 px-3 rounded-md text-sm font-bold transition-all flex items-center justify-center gap-2 text-gray-600 hover:bg-gray-100">
+          <i data-lucide="timer" class="w-4 h-4"></i>경기기록
+        </button>
+      </div>
+    </div>
+
+    <!-- Content Box -->
+    <div class="bg-white shadow-lg rounded-lg">
+
+      <!-- Calculator Tab -->
+      <div id="tab-content-calculator" class="p-4">
+        <div class="mb-4 relative">
+          <button onclick="toggleDistanceDropdown()" class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
+            <span class="text-sm font-medium text-gray-700">자주 사용하는 거리</span>
+            <i id="dropdown-chevron" data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform"></i>
+          </button>
+          <div id="distance-dropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-80 overflow-y-auto"></div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="p-4 bg-gray-50 rounded-lg">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-gray-700 w-12">거리</span>
+              <input id="c-distance" type="number" step="0.01" oninput="handleDistanceChange(this.value)" class="w-20 px-2 py-1.5 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white" placeholder="0">
+              <span class="text-sm text-gray-600">km</span>
+            </div>
+          </div>
+
+          <div class="p-4 bg-gray-50 rounded-lg">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-gray-700 w-12">시간</span>
+              <input id="c-timeH" type="number" min="0" oninput="handleTimeChange()" class="w-14 px-1 py-1.5 text-base border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white" placeholder="0">
+              <span class="text-lg text-gray-400">:</span>
+              <input id="c-timeM" type="number" min="0" max="59" oninput="handleTimeChange()" class="w-14 px-1 py-1.5 text-base border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white" placeholder="00">
+              <span class="text-lg text-gray-400">:</span>
+              <input id="c-timeS" type="number" min="0" max="59" oninput="handleTimeChange()" class="w-14 px-1 py-1.5 text-base border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white" placeholder="00">
+            </div>
+          </div>
+
+          <div class="p-4 bg-blue-50 rounded-lg">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-blue-600 w-12">속도</span>
+              <input id="c-speed" type="number" step="0.01" oninput="handleSpeedChange()" class="w-20 px-2 py-1.5 text-base border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white" placeholder="0">
+              <span class="text-sm text-gray-600">km/h</span>
+            </div>
+          </div>
+
+          <div class="p-4 bg-green-50 rounded-lg">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-green-600 w-12">페이스</span>
+              <input id="c-paceM" type="number" min="0" oninput="handlePaceChange()" class="w-12 px-1 py-1.5 text-base border border-green-300 rounded-lg text-center focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white" placeholder="0">
+              <span class="text-lg text-gray-400">:</span>
+              <input id="c-paceS" type="number" min="0" max="59" oninput="handlePaceChange()" class="w-12 px-1 py-1.5 text-base border border-green-300 rounded-lg text-center focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white" placeholder="00">
+              <div class="flex gap-1 ml-1">
+                <button type="button" id="pace-unit-1km" onclick="setPaceUnit('1km')" class="px-3 py-1 text-sm rounded border bg-green-600 text-white border-green-600">/km</button>
+                <button type="button" id="pace-unit-100m" onclick="setPaceUnit('100m')" class="px-1 py-1 text-sm rounded border bg-white text-gray-700 border-gray-300">/100m</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <p class="text-xs text-gray-600 text-left">거리, 시간, 속도(페이스) 중 2개 값을 입력하면 나머지는 자동계산 됩니다.</p>
+        </div>
+      </div>
+
+      <!-- Race Timer Tab -->
+      <div id="tab-content-race" class="p-4 hidden">
+        <div class="mb-4">
+          <div class="flex justify-center gap-3">
+            <label class="flex items-center justify-center"><input type="radio" name="courseMode" value="standard" checked onchange="handleCourseModeChange('standard')" class="mr-2"><span class="text-sm">표준코스</span></label>
+            <label class="flex items-center justify-center"><input type="radio" name="courseMode" value="half" onchange="handleCourseModeChange('half')" class="mr-2"><span class="text-sm">하프코스</span></label>
+            <label class="flex items-center justify-center"><input type="radio" name="courseMode" value="king" onchange="handleCourseModeChange('king')" class="mr-2"><span class="text-sm">킹코스</span></label>
+          </div>
+        </div>
+
+        <!-- Swimming -->
+        <div class="mb-3 p-3 bg-blue-50 rounded-lg">
+          <div class="flex items-center gap-2 mb-2"><i data-lucide="waves" class="w-4 h-4 text-blue-600"></i><h3 class="font-bold text-sm text-gray-800">수영</h3></div>
+          <div class="flex items-center gap-1">
+            <span class="text-xs text-gray-700">거리(km)</span>
+            <input id="r-swimDist" type="number" step="0.01" value="1.5" oninput="updateRaceHints()" class="w-16 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="1.5">
+            <span class="text-xs text-gray-700 ml-1">기록</span>
+            <div class="flex items-center gap-0.5 ml-1">
+              <input id="r-swimH" type="number" min="0" oninput="updateRaceHints()" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="0">
+              <span class="text-sm text-gray-400">:</span>
+              <input id="r-swimM" type="number" min="0" max="59" oninput="updateRaceHints()" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="00">
+              <span class="text-sm text-gray-400">:</span>
+              <input id="r-swimS" type="number" min="0" max="59" oninput="updateRaceHints()" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="00">
+            </div>
+          </div>
+          <div id="r-swimHint" class="text-xs text-blue-700 mt-1.5 hidden"></div>
+        </div>
+
+        <!-- T1 -->
+        <div class="mb-3 p-2">
+          <div class="flex items-center justify-center gap-2">
+            <h3 class="font-bold text-sm text-gray-800">T1</h3>
+            <span class="text-xs text-gray-700">시간</span>
+            <div class="flex items-center gap-0.5">
+              <input id="r-t1H" type="number" min="0" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="0">
+              <span class="text-sm text-gray-400">:</span>
+              <input id="r-t1M" type="number" min="0" max="59" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="00">
+              <span class="text-sm text-gray-400">:</span>
+              <input id="r-t1S" type="number" min="0" max="59" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="00">
+            </div>
+          </div>
+        </div>
+
+        <!-- Cycling -->
+        <div class="mb-3 p-3 bg-green-50 rounded-lg">
+          <div class="flex items-center gap-2 mb-2"><i data-lucide="bike" class="w-4 h-4 text-green-600"></i><h3 class="font-bold text-sm text-gray-800">사이클</h3></div>
+          <div class="flex items-center gap-1">
+            <span class="text-xs text-gray-700">거리(km)</span>
+            <input id="r-bikeDist" type="number" step="0.01" value="40" oninput="updateRaceHints()" class="w-16 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="40">
+            <span class="text-xs text-gray-700 ml-1">기록</span>
+            <div class="flex items-center gap-0.5 ml-1">
+              <input id="r-bikeH" type="number" min="0" oninput="updateRaceHints()" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="0">
+              <span class="text-sm text-gray-400">:</span>
+              <input id="r-bikeM" type="number" min="0" max="59" oninput="updateRaceHints()" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="00">
+              <span class="text-sm text-gray-400">:</span>
+              <input id="r-bikeS" type="number" min="0" max="59" oninput="updateRaceHints()" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="00">
+            </div>
+          </div>
+          <div id="r-bikeHint" class="text-xs text-green-700 mt-1.5 hidden"></div>
+        </div>
+
+        <!-- T2 -->
+        <div class="mb-3 p-2">
+          <div class="flex items-center justify-center gap-2">
+            <h3 class="font-bold text-sm text-gray-800">T2</h3>
+            <span class="text-xs text-gray-700">시간</span>
+            <div class="flex items-center gap-0.5">
+              <input id="r-t2H" type="number" min="0" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="0">
+              <span class="text-sm text-gray-400">:</span>
+              <input id="r-t2M" type="number" min="0" max="59" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="00">
+              <span class="text-sm text-gray-400">:</span>
+              <input id="r-t2S" type="number" min="0" max="59" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="00">
+            </div>
+          </div>
+        </div>
+
+        <!-- Running -->
+        <div class="mb-3 p-3 bg-orange-50 rounded-lg">
+          <div class="flex items-center gap-2 mb-2"><span class="text-orange-600 text-base">🏃‍♂️</span><h3 class="font-bold text-sm text-gray-800">달리기</h3></div>
+          <div class="flex items-center gap-1">
+            <span class="text-xs text-gray-700">거리(km)</span>
+            <input id="r-runDist" type="number" step="0.01" value="10" oninput="updateRaceHints()" class="w-16 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="10">
+            <span class="text-xs text-gray-700 ml-1">기록</span>
+            <div class="flex items-center gap-0.5 ml-1">
+              <input id="r-runH" type="number" min="0" oninput="updateRaceHints()" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="0">
+              <span class="text-sm text-gray-400">:</span>
+              <input id="r-runM" type="number" min="0" max="59" oninput="updateRaceHints()" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="00">
+              <span class="text-sm text-gray-400">:</span>
+              <input id="r-runS" type="number" min="0" max="59" oninput="updateRaceHints()" class="w-11 px-1 py-1.5 text-sm border border-gray-300 rounded text-center" placeholder="00">
+            </div>
+          </div>
+          <div id="r-runHint" class="text-xs text-orange-700 mt-1.5 hidden"></div>
+        </div>
+
+        <button onclick="calculateTotalRaceTime()" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition-colors text-sm">총 경기시간 계산</button>
+
+        <div id="race-results" class="mt-4 space-y-3 hidden">
+          <div class="text-center p-3 bg-blue-600 rounded-lg text-white">
+            <p class="text-sm">총 완주시간</p>
+            <p id="res-total" class="text-xl font-bold"></p>
+          </div>
+          <div class="space-y-2">
+            <div class="p-3 bg-blue-50 rounded-lg">
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-bold text-blue-800 w-12">수영</span>
+                <span id="res-swim-time" class="text-sm font-bold text-blue-800 w-16"></span>
+                <span class="text-xs text-gray-500">페이스 <span id="res-swim-pace"></span> /100m</span>
+              </div>
+            </div>
+            <div class="p-3 bg-green-50 rounded-lg">
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-bold text-green-800 w-12">사이클</span>
+                <span id="res-bike-time" class="text-sm font-bold text-green-800 w-16"></span>
+                <span class="text-xs text-gray-500">평속 <span id="res-bike-speed"></span> km/h</span>
+              </div>
+            </div>
+            <div class="p-3 bg-amber-50 rounded-lg">
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-bold text-amber-800 w-12">달리기</span>
+                <span id="res-run-time" class="text-sm font-bold text-amber-800 w-16"></span>
+                <span class="text-xs text-gray-500">페이스 <span id="res-run-pace"></span> /km</span>
+              </div>
+            </div>
+            <div class="p-3 bg-gray-50 rounded-lg">
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-bold text-gray-800 w-12">T1+T2</span>
+                <span id="res-transitions" class="text-sm font-bold text-gray-800 w-16"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Dialog (미사용 상태로 코드만 보존 - 여는 버튼 없음, 원본과 동일) -->
+    <div id="save-dialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+      <div class="bg-white p-6 rounded-xl max-w-sm mx-4 w-full">
+        <h3 class="text-lg font-bold text-center mb-4">플랜 수립 완료!</h3>
+        <p class="text-sm text-gray-600 text-center mb-4">이미지에 들어갈 제목을 적어주세요</p>
+        <input id="event-title-input" type="text" placeholder="예: 2024 부산 철인3종" class="w-full px-4 py-3 border border-gray-300 rounded-lg mb-4">
+        <div class="flex gap-3">
+          <button onclick="document.getElementById('save-dialog').classList.add('hidden')" class="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700">취소</button>
+          <button onclick="saveResultImage()" class="flex-1 py-2 bg-blue-600 text-white rounded-lg disabled:bg-gray-400">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <canvas id="hidden-canvas" style="display:none"></canvas>
+  </div>
+
+  <div class="mt-6 text-center text-xs text-gray-500 p-4"><p>Made by Ian Kwon | Ver 1.0</p></div>
+</div>
+
+<!-- Logo Popup -->
+<div id="logo-popup" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50" onclick="hideLogoPopup()">
+  <img src="running_logo.gif" alt="철인계산기" class="w-[70vw] max-w-sm h-auto rounded-2xl" style="animation:fadeScaleIn 0.3s ease-out;">
+</div>
+
+<script>
+// ===== 상태 =====
+let fixedPair = [null, null];   // [anchorField, recentField]
+let paceUnit = '1km';
+let courseMode = 'standard';
+let totalTimeResult = null;
+
+const coursePresets = {
+  standard: { swim: '1.5', bike: '40', run: '10' },
+  half: { swim: '1.9', bike: '90', run: '21.0975' },
+  king: { swim: '3.8', bike: '180', run: '42.195' }
+};
+
+const distancePresets = [
+  { icon: '🏃‍♂️', label: '달리기', distances: [
+    { label: '5km', value: '5' }, { label: '10km', value: '10' },
+    { label: '21.0975km (하프)', value: '21.0975' }, { label: '42.195km (풀)', value: '42.195' }
+  ]},
+  { icon: '🚴‍♂️', label: '사이클', distances: [
+    { label: '20km', value: '20' }, { label: '40km (표준)', value: '40' },
+    { label: '90km (하프)', value: '90' }, { label: '180km (킹)', value: '180' }
+  ]},
+  { icon: '🏊‍♂️', label: '수영', distances: [
+    { label: '0.75km (스프린트)', value: '0.75' }, { label: '1.5km (표준)', value: '1.5' },
+    { label: '1.9km (하프)', value: '1.9' }, { label: '3.8km (킹)', value: '3.8' }
+  ]}
+];
+
+function $(id){ return document.getElementById(id); }
+function val(id){ return $(id).value; }
+function setv(id, v){ $(id).value = v; }
+
+// ===== 탭 전환 =====
+function switchTab(tab) {
+  const isCalc = tab === 'calculator';
+  $('tab-content-calculator').classList.toggle('hidden', !isCalc);
+  $('tab-content-race').classList.toggle('hidden', isCalc);
+  $('tab-btn-calculator').className = 'flex-1 py-3 px-3 rounded-md text-sm font-bold transition-all flex items-center justify-center gap-2 ' + (isCalc ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100');
+  $('tab-btn-race').className = 'flex-1 py-3 px-3 rounded-md text-sm font-bold transition-all flex items-center justify-center gap-2 ' + (!isCalc ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100');
+}
+
+// ===== 거리 프리셋 드롭다운 =====
+function renderDistanceDropdown() {
+  const el = $('distance-dropdown');
+  el.innerHTML = distancePresets.map(cat => `
+    <div class="border-b border-gray-100 last:border-b-0">
+      <div class="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600 flex items-center gap-2">
+        <span>${cat.icon}</span><span>${cat.label}</span>
+      </div>
+      ${cat.distances.map(d => `<button onclick="selectDistance('${d.value}')" class="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 transition-colors">${d.label}</button>`).join('')}
+    </div>
+  `).join('');
+}
+function toggleDistanceDropdown() {
+  const el = $('distance-dropdown');
+  const willOpen = el.classList.contains('hidden');
+  el.classList.toggle('hidden');
+  $('dropdown-chevron').classList.toggle('rotate-180', willOpen);
+}
+function selectDistance(value) {
+  $('distance-dropdown').classList.add('hidden');
+  $('dropdown-chevron').classList.remove('rotate-180');
+  setv('c-distance', value);
+  handleDistanceChange(value);
+}
+
+// ===== 계산기: fixedPair 관리 (원본 markFixed 로직과 동일) =====
+function markFixed(field) {
+  const [anchor, recent] = fixedPair;
+  const conflicting = field === 'speed' ? 'pace' : field === 'pace' ? 'speed' : null;
+
+  if (!anchor && !recent) { fixedPair = [field, null]; return; }
+  if (anchor && !recent) {
+    if (anchor === field) return;
+    if (conflicting && anchor === conflicting) { fixedPair = [field, null]; return; }
+    fixedPair = [anchor, field];
+    return;
+  }
+  if (field === anchor || field === recent) return;
+  if (conflicting) {
+    if (recent === conflicting) { fixedPair = [anchor, field]; return; }
+    if (anchor === conflicting) { fixedPair = [field, recent]; return; }
+  }
+  fixedPair = [anchor, field];
+}
+
+function handleDistanceChange(value) { markFixed('distance'); recalc(); }
+function handleTimeChange() { markFixed('time'); recalc(); }
+function handleSpeedChange() { markFixed('speed'); recalc(); }
+function handlePaceChange() { markFixed('pace'); recalc(); }
+
+function setPaceUnit(unit) {
+  const pm = val('c-paceM'), ps = val('c-paceS');
+  if (unit === '1km' && paceUnit === '100m' && (pm || ps)) {
+    const currentSec = (parseInt(pm) || 0) * 60 + (parseInt(ps) || 0);
+    const newSec = currentSec * 10;
+    setv('c-paceM', Math.floor(newSec / 60) > 0 ? String(Math.floor(newSec / 60)) : '0');
+    setv('c-paceS', String(newSec % 60));
+  } else if (unit === '100m' && paceUnit === '1km' && (pm || ps)) {
+    const currentSec = (parseInt(pm) || 0) * 60 + (parseInt(ps) || 0);
+    const newSec = Math.round(currentSec / 10);
+    setv('c-paceM', Math.floor(newSec / 60) > 0 ? String(Math.floor(newSec / 60)) : '0');
+    setv('c-paceS', String(newSec % 60));
+  }
+  paceUnit = unit;
+  $('pace-unit-1km').className = 'px-3 py-1 text-sm rounded border ' + (unit === '1km' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-700 border-gray-300');
+  $('pace-unit-100m').className = 'px-1 py-1 text-sm rounded border ' + (unit === '100m' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-700 border-gray-300');
+}
+
+// 자동계산 (원본 useEffect 로직과 동일)
+function recalc() {
+  const [anchor, recent] = fixedPair;
+  if (!anchor || !recent) return;
+  const fixedSet = new Set([anchor, recent]);
+
+  const dist = parseFloat(val('c-distance'));
+  const timeInMin = ((parseInt(val('c-timeH')) || 0) * 60) + (parseInt(val('c-timeM')) || 0) + ((parseInt(val('c-timeS')) || 0) / 60);
+  const spd = parseFloat(val('c-speed'));
+  const rawPaceMin = (parseInt(val('c-paceM')) || 0) + ((parseInt(val('c-paceS')) || 0) / 60);
+  const pacePerKm = paceUnit === '100m' ? rawPaceMin * 10 : rawPaceMin;
+
+  const hasDist = fixedSet.has('distance') && !isNaN(dist) && dist > 0;
+  const hasTime = fixedSet.has('time') && timeInMin > 0;
+  const hasSpeed = fixedSet.has('speed') && !isNaN(spd) && spd > 0;
+  const hasPace = fixedSet.has('pace') && pacePerKm > 0;
+
+  const applyTime = (totalMinutes) => {
+    const totalSec = Math.round(totalMinutes * 60);
+    const h = Math.floor(totalSec / 3600), m = Math.floor((totalSec % 3600) / 60), s = totalSec % 60;
+    setv('c-timeH', h > 0 ? String(h) : '');
+    setv('c-timeM', m > 0 ? String(m) : (h > 0 ? '0' : ''));
+    setv('c-timeS', s > 0 ? String(s) : '');
+  };
+  const applyPace = (pacePerKmVal) => {
+    const displayPace = paceUnit === '100m' ? pacePerKmVal / 10 : pacePerKmVal;
+    const totalSec = Math.round(displayPace * 60);
+    setv('c-paceM', String(Math.floor(totalSec / 60)));
+    setv('c-paceS', String(totalSec % 60));
+  };
+  const applySpeed = (v) => setv('c-speed', v.toFixed(2));
+  const applyDistance = (v) => setv('c-distance', v.toFixed(2));
+
+  if (hasDist && hasTime) {
+    const calcSpeed = dist / (timeInMin / 60), calcPacePerKm = timeInMin / dist;
+    if (!fixedSet.has('speed')) applySpeed(calcSpeed);
+    if (!fixedSet.has('pace')) applyPace(calcPacePerKm);
+  } else if (hasDist && hasSpeed) {
+    const calcTimeMin = (dist / spd) * 60, calcPacePerKm = calcTimeMin / dist;
+    if (!fixedSet.has('time')) applyTime(calcTimeMin);
+    if (!fixedSet.has('pace')) applyPace(calcPacePerKm);
+  } else if (hasDist && hasPace) {
+    const calcTimeMin = dist * pacePerKm, calcSpeed = dist / (calcTimeMin / 60);
+    if (!fixedSet.has('time')) applyTime(calcTimeMin);
+    if (!fixedSet.has('speed')) applySpeed(calcSpeed);
+  } else if (hasTime && hasSpeed) {
+    const calcDist = (spd * timeInMin) / 60, calcPacePerKm = timeInMin / calcDist;
+    if (!fixedSet.has('distance')) applyDistance(calcDist);
+    if (!fixedSet.has('pace')) applyPace(calcPacePerKm);
+  } else if (hasTime && hasPace) {
+    const calcDist = timeInMin / pacePerKm, calcSpeed = calcDist / (timeInMin / 60);
+    if (!fixedSet.has('distance')) applyDistance(calcDist);
+    if (!fixedSet.has('speed')) applySpeed(calcSpeed);
+  }
+}
+
+// ===== 레이스 타이머 =====
+function hmsToMinutes(h, m, s) { return (parseInt(h) || 0) * 60 + (parseInt(m) || 0) + (parseInt(s) || 0) / 60; }
+function minutesToTimeShort(minutes) {
+  const mins = Math.floor(minutes), secs = Math.round((minutes % 1) * 60);
+  return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+}
+function minutesToTime(minutes) {
+  const hours = Math.floor(minutes / 60), mins = Math.floor(minutes % 60), secs = Math.round((minutes % 1) * 60);
+  return String(hours).padStart(2, '0') + ':' + String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+}
+
+function handleCourseModeChange(mode) {
+  courseMode = mode;
+  const p = coursePresets[mode];
+  setv('r-swimDist', p.swim); setv('r-bikeDist', p.bike); setv('r-runDist', p.run);
+  updateRaceHints();
+}
+
+function updateRaceHints() {
+  const swimT = hmsToMinutes(val('r-swimH'), val('r-swimM'), val('r-swimS'));
+  const swimD = parseFloat(val('r-swimDist'));
+  const swimShow = (val('r-swimH') || val('r-swimM') || val('r-swimS')) && val('r-swimDist');
+  $('r-swimHint').classList.toggle('hidden', !swimShow);
+  if (swimShow) $('r-swimHint').textContent = '페이스: ' + (swimT && swimD ? minutesToTimeShort((swimT / swimD) / 10) : '00:00') + '/100m';
+
+  const bikeT = hmsToMinutes(val('r-bikeH'), val('r-bikeM'), val('r-bikeS'));
+  const bikeD = parseFloat(val('r-bikeDist'));
+  const bikeShow = (val('r-bikeH') || val('r-bikeM') || val('r-bikeS')) && val('r-bikeDist');
+  $('r-bikeHint').classList.toggle('hidden', !bikeShow);
+  if (bikeShow) $('r-bikeHint').textContent = '평속: ' + (bikeT && bikeD ? (bikeD / (bikeT / 60)).toFixed(1) : '0.0') + ' km/h';
+
+  const runT = hmsToMinutes(val('r-runH'), val('r-runM'), val('r-runS'));
+  const runD = parseFloat(val('r-runDist'));
+  const runShow = (val('r-runH') || val('r-runM') || val('r-runS')) && val('r-runDist');
+  $('r-runHint').classList.toggle('hidden', !runShow);
+  if (runShow) $('r-runHint').textContent = '페이스: ' + (runT && runD ? minutesToTimeShort(runT / runD) : '00:00') + '/km';
+}
+
+function calculateTotalRaceTime() {
+  const swim = hmsToMinutes(val('r-swimH'), val('r-swimM'), val('r-swimS'));
+  const t1 = hmsToMinutes(val('r-t1H'), val('r-t1M'), val('r-t1S'));
+  const bike = hmsToMinutes(val('r-bikeH'), val('r-bikeM'), val('r-bikeS'));
+  const t2 = hmsToMinutes(val('r-t2H'), val('r-t2M'), val('r-t2S'));
+  const run = hmsToMinutes(val('r-runH'), val('r-runM'), val('r-runS'));
+  const total = swim + t1 + bike + t2 + run;
+
+  const swimDist = parseFloat(val('r-swimDist')) || 0;
+  const bikeDist = parseFloat(val('r-bikeDist')) || 0;
+  const runDist = parseFloat(val('r-runDist')) || 0;
+
+  totalTimeResult = {
+    total: minutesToTime(total),
+    swim: { time: minutesToTime(swim), pace: swim && swimDist ? minutesToTimeShort((swim / swimDist) / 10) : '00:00' },
+    bike: { time: minutesToTime(bike), speed: bike && bikeDist ? (bikeDist / (bike / 60)).toFixed(1) : '0.0' },
+    run: { time: minutesToTime(run), pace: run && runDist ? minutesToTimeShort(run / runDist) : '00:00' },
+    transitions: minutesToTime(t1 + t2)
+  };
+
+  $('res-total').textContent = totalTimeResult.total;
+  $('res-swim-time').textContent = totalTimeResult.swim.time;
+  $('res-swim-pace').textContent = totalTimeResult.swim.pace;
+  $('res-bike-time').textContent = totalTimeResult.bike.time;
+  $('res-bike-speed').textContent = totalTimeResult.bike.speed;
+  $('res-run-time').textContent = totalTimeResult.run.time;
+  $('res-run-pace').textContent = totalTimeResult.run.pace;
+  $('res-transitions').textContent = totalTimeResult.transitions;
+  $('race-results').classList.remove('hidden');
+}
+
+// ===== 결과 이미지 저장 (원본처럼 트리거 버튼 없이 코드만 보존) =====
+function saveResultImage() {
+  const eventTitle = val('event-title-input');
+  if (!eventTitle.trim() || !totalTimeResult) return;
+  const canvas = $('hidden-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 800; canvas.height = 1000;
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#1f2937'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center';
+  ctx.fillText('Ian 철인계산기', canvas.width / 2, 50);
+  ctx.font = 'bold 28px Arial'; ctx.fillStyle = '#2563eb';
+  ctx.fillText(eventTitle, canvas.width / 2, 100);
+  ctx.textAlign = 'left'; ctx.fillStyle = '#374151'; ctx.font = '20px Arial';
+  let y = 180; const lineHeight = 50;
+  ctx.fillText('수영', 80, y); ctx.fillText(val('r-swimDist') + 'km', 200, y); ctx.fillText(totalTimeResult.swim.time, 320, y); ctx.fillText(totalTimeResult.swim.pace + '/100m', 480, y);
+  y += lineHeight;
+  ctx.fillText('사이클', 80, y); ctx.fillText(val('r-bikeDist') + 'km', 200, y); ctx.fillText(totalTimeResult.bike.time, 320, y); ctx.fillText(totalTimeResult.bike.speed + 'km/h', 480, y);
+  y += lineHeight;
+  ctx.fillText('달리기', 80, y); ctx.fillText(val('r-runDist') + 'km', 200, y); ctx.fillText(totalTimeResult.run.time, 320, y); ctx.fillText(totalTimeResult.run.pace + '/km', 480, y);
+  y += lineHeight;
+  ctx.fillText('T1+T2', 80, y); ctx.fillText(totalTimeResult.transitions, 320, y);
+  y += lineHeight;
+  ctx.font = 'bold 24px Arial'; ctx.fillStyle = '#dc2626';
+  ctx.fillText('총완주', 80, y); ctx.fillText(totalTimeResult.total, 320, y);
+  ctx.fillStyle = '#6b7280'; ctx.font = '14px Arial'; ctx.textAlign = 'center';
+  ctx.fillText('Made by Ian Kwon | Ver 1.0', canvas.width / 2, canvas.height - 30);
+  const link = document.createElement('a');
+  link.download = eventTitle + '-철인3종기록.png';
+  link.href = canvas.toDataURL();
+  link.click();
+  $('save-dialog').classList.add('hidden');
+}
+
+// ===== 로고 팝업 =====
+function showLogoPopup() { $('logo-popup').classList.remove('hidden'); }
+function hideLogoPopup() { $('logo-popup').classList.add('hidden'); }
+
+// ===== 초기화 =====
+renderDistanceDropdown();
+lucide.createIcons();
+</script>
+</body>
+</html>
